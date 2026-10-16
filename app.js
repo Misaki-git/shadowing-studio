@@ -102,6 +102,25 @@ $('series').onchange = async () => {
     const folder=folders.find(f=>f.name===tab.title);
     const files=folder?await list("'"+folder.id+"' in parents and trashed = false"):[];
     const map=parseDriveFiles(files);
+    // Additional audio names: "TOEIC 1.mp3", "TOEIC_001.m4a", etc.
+    // Match the *complete* tab name followed by a lesson number; never
+    // confuse 1 with 11, or TOEIC with TOEIC Advanced.
+    const escapeRE = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const seriesRE = new RegExp('^' + escapeRE(tab.title.trim()) + '[\\s_-]+0*(\\d+)(?:[\\s_-].*)?\\.(mp3|m4a|wav|aac|webm)$', 'i');
+    const collisions = [];
+    for (const f of files) {
+      const m = f.name.match(seriesRE);
+      if (!m) continue;
+      const day = Number(m[1]);
+      if (!Number.isSafeInteger(day) || day < 1) continue;
+      const item = map.get(day) || {day};
+      if (item.audio && item.audio.id !== f.id) {
+        collisions.push('Lesson '+day+'：'+item.audio.name+' / '+f.name);
+      } else {
+        item.audio = f;
+      }
+      map.set(day, item);
+    }
     for(const row of rows.slice(1)) {
       const cell=k=>col(k)<0?'':String(row[col(k)]||'').trim();
       const day=Number(cell('lesson'));
@@ -115,6 +134,7 @@ $('series').onchange = async () => {
     }
     lessons=[...map.values()];
     showLessons('シート '+Math.max(0,rows.length-1)+'行・Drive '+files.length+'ファイル');
+    if (collisions.length) set('lessonStatus', $('lessonStatus').textContent + ' ※同じ番号の音声が複数あります：' + collisions.join('、'));
   } catch(e) {set('lessonStatus','教材読み込みエラー：'+error(e));}
 };
 function tedURL(raw) {
