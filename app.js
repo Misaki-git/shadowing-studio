@@ -4,8 +4,36 @@ $('login').onclick=async()=>{try{if(!window.GOOGLE_CLIENT_ID?.endsWith('.apps.go
 $('logout').onclick=()=>{if(token&&window.google?.accounts?.oauth2)google.accounts.oauth2.revoke(token,()=>{});token='';folders=[];lessons=[];$('logout').disabled=true;$('refresh').disabled=true;['root','series','lesson'].forEach(id=>opts(id,[],'未接続'));set('auth','接続を解除しました')};
 async function req(path,params={}){if(!token)throw Error('再ログインしてください');const u=new URL('https://www.googleapis.com/drive/v3/'+path);Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));const r=await fetch(u,{headers:{Authorization:'Bearer '+token}});if(!r.ok)throw Error('Drive API '+r.status+' '+(await r.text()).slice(0,200));return r}
 async function list(q){let all=[],next='';do{const d=await (await req('files',{q,fields:'nextPageToken,files(id,name,mimeType,parents)',pageSize:'1000',...(next?{pageToken:next}:{})})).json();all.push(...(d.files||[]));next=d.nextPageToken||''}while(next);return all}
-async function refresh(){try{set('auth','Driveのフォルダを読み込み中…');folders=await list("mimeType = 'application/vnd.google-apps.folder' and trashed = false");const roots=folders.filter(f=>f.name==='Shadowing Studio');opts('root',roots,'親フォルダを選択');set('auth',`接続済み：フォルダ ${folders.length} 件。${roots.length?'':'Driveに「Shadowing Studio」フォルダを作成してください。'}`);if(roots.length===1){$('root').value=roots[0].id;loadSeries()}}catch(e){set('auth',error(e))}}$('refresh').onclick=refresh;
-function loadSeries(){const root=$('root').value;opts('series',folders.filter(f=>f.parents?.includes(root)),'シリーズを選択');opts('lesson',[],'Dayを選択')} $('root').onchange=loadSeries;
+const ROOT_FOLDER_ID = '1dz6AvQLtMvzPiFavmXphWrGwfitSFvTk';
+async function refresh() {
+  try {
+    set('auth', '親フォルダを読み込み中…');
+    const r = await req('files/' + ROOT_FOLDER_ID, {fields:'id,name,mimeType,trashed'});
+    const root = await r.json();
+    if (root.trashed || root.mimeType !== 'application/vnd.google-apps.folder') throw Error('指定したIDはフォルダではありません');
+    opts('root', [root], '親フォルダを選択');
+    $('root').value = root.id;
+    await loadSeries();
+  } catch (e) {
+    opts('root', [], '親フォルダを取得できません');
+    opts('series', [], 'シリーズを選択');
+    opts('lesson', [], 'レッスンを選択');
+    set('auth', 'フォルダ取得エラー：' + error(e));
+  }
+}
+$('refresh').onclick = refresh;
+async function loadSeries() {
+  const root = $('root').value;
+  opts('series', [], 'シリーズを選択');
+  opts('lesson', [], 'レッスンを選択');
+  if (!root) return;
+  try {
+    folders = await list("'" + root + "' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false");
+    opts('series', folders, 'シリーズを選択');
+    set('auth', `接続済み：教材シリーズ ${folders.length} 件`);
+  } catch (e) { set('auth', 'シリーズ取得エラー：' + error(e)); }
+}
+$('root').onchange = loadSeries;
 const match = name => name.match(/^(?:day|lesson)?[ _-]*0*(\d+)(?:[ _-].*)?\.(txt|mp3|m4a|wav|aac|webm|url)$/i);
 $('series').onchange = async () => {
   try {
