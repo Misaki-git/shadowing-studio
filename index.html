@@ -41,10 +41,12 @@
       border-radius: 9px;
       padding: 12px;
       cursor: pointer;
+      font: inherit;
     }
 
     button:disabled {
       opacity: 0.4;
+      cursor: not-allowed;
     }
 
     button.alt {
@@ -117,6 +119,24 @@
       font-size: 13px;
       color: #617088;
     }
+
+    a {
+      color: #274572;
+    }
+
+    @media (max-width: 480px) {
+      main {
+        padding: 16px 12px 60px;
+      }
+
+      section {
+        padding: 15px;
+      }
+
+      button {
+        padding: 11px;
+      }
+    }
   </style>
 </head>
 
@@ -130,7 +150,7 @@
     シャドーイングと瞬間英作文を練習。
   </p>
 
-  <!-- Google Drive 接続 -->
+  <!-- ① Google Drive 接続 -->
 
   <section>
     <h2>① Google Drive接続</h2>
@@ -155,7 +175,7 @@
     </p>
   </section>
 
-  <!-- 教材選択 -->
+  <!-- ② 教材選択 -->
 
   <section>
     <h2>② 教材を選ぶ</h2>
@@ -201,6 +221,7 @@
       <p class="hint">
         TEDの再生・停止は公式プレイヤーで
         操作してください。
+        録音開始ボタンはTEDを操作しません。
       </p>
 
       <a id="tedOpen"
@@ -234,7 +255,7 @@
     </div>
   </section>
 
-  <!-- 録音 -->
+  <!-- ③ 録音 -->
 
   <section>
     <h2>③ 再生＋録音</h2>
@@ -286,9 +307,12 @@
     </div>
   </section>
 
+  <!-- ④ 瞬間英作文はcomposition.jsで自動生成 -->
+
   <p>
     教材はGitHubに公開しません。
-    録音は端末内で作成されます。
+    録音は端末内で作成され、
+    共有操作をするまで外部には送信されません。
   </p>
 
 </main>
@@ -299,7 +323,7 @@
 
 <script src="app.js?v=names3"></script>
 
-<script src="composition.js?v=2"></script>
+<script src="composition.js?v=3"></script>
 
 </body>
 </html>
